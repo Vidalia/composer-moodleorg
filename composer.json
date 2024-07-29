@@ -1,0 +1,30 @@
+{
+  "name": "vidalia/composer-moodleorg",
+  "description": "Provides packages installed from Moodle.org",
+  "type": "composer-plugin",
+  "minimum-stability": "stable",
+  "license": "GPL-3.0-or-later",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "John Maydew",
+      "email": "jdmayd+composer@essex.ac.uk"
+    }
+  ],
+  "prefer-stable": true,
+  "require": {
+    "composer-plugin-api": "^2"
+  },
+  "require-dev": {
+    "composer/composer": "^2.0",
+    "phpstan/phpstan": "^1.11"
+  },
+  "autoload": {
+    "psr-4": {
+      "Vidalia\\Composer\\MoodleOrg\\": "src/"
+    }
+  },
+  "extra": {
+    "class": "Vidalia\\Composer\\MoodleOrg\\Plugin"
+  }
+}
