@@ -1,10 +1,10 @@
 {
   "name": "vidalia/composer-moodleorg",
-  "description": "Provides packages installed from Moodle.org",
+  "description": "Download and manage Moodle plugins using the moodle.org plugins directory",
   "type": "composer-plugin",
   "minimum-stability": "stable",
   "license": "GPL-3.0-or-later",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "authors": [
     {
       "name": "John Maydew",

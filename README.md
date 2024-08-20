@@ -30,3 +30,16 @@ For example, to install `format_cards` version `2024052100` you would use
 ```shell
 composer require moodledotorg/format_cards:2024.5.2100
 ```
+
+## Rate limiting
+
+The Moodle.org plugin directory is meant for human use, so automatically downloading a large number
+of packages triggers the rate limiter. By default, the plugin limits the number of concurrent HTTP
+requests by setting `COMPOSER_MAX_PARALLEL_HTTP=1`. It also imposes a 12-second cool-off period after
+downloading 12 files from Moodle.org.
+
+The environment variables `COMPOSER_MOODLEORG_THROTTLE_COUNT` and `COMPOSER_MOODLEORG_THROTTLE_SLEEP`
+can be used to tweak the number of files to be downloaded, and the cool-off period in seconds.
+
+You can disable throttling entirely with `COMPOSER_MOODLEORG_NO_THROTTLE`, which also prevents setting
+`COMPOSER_MAX_PARALLEL_HTTP`.

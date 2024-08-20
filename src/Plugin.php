@@ -9,7 +9,6 @@ use Composer\Package\BasePackage;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
 use Composer\Plugin\PostFileDownloadEvent;
-use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Util\Platform;
 use UnexpectedValueException;
 
@@ -18,6 +17,10 @@ use UnexpectedValueException;
  */
 class Plugin implements PluginInterface, EventSubscriberInterface
 {
+    private IOInterface $io;
+
+    private int $throttleUsage = 0;
+
     /**
      * @param Composer $composer
      * @param IOInterface $io
@@ -25,6 +28,12 @@ class Plugin implements PluginInterface, EventSubscriberInterface
      */
     public function activate(Composer $composer, IOInterface $io): void
     {
+        $this->io = $io;
+
+        if (!(Platform::getEnv("COMPOSER_MOODLEORG_NO_THROTTLE") ?: false)) {
+            Platform::putEnv("COMPOSER_MAX_PARALLEL_HTTP", 1);
+        }
+
         $composer->getRepositoryManager()->addRepository(new Repository($composer->getConfig(), $io));
     }
 
@@ -57,51 +66,19 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     {
         return [
             PluginEvents::POST_FILE_DOWNLOAD => [
-                ['onPostFileDownload', 0]
+                [ 'verifyDownloadedPackage', 0 ],
+                [ 'rateLimit', 1 ],
             ],
-            PluginEvents::PRE_FILE_DOWNLOAD => [
-                ['onPreFileDownload', 0]
-            ]
         ];
     }
 
     /**
-     * @var int How many files have been downloaded since the last wait
-     */
-    private int $throttleUsage = 0;
-
-    /**
-     * Rate limit connections to downloads.moodle.org, so we don't get
-     * throttled by the CDN.
-     *
-     * @param PreFileDownloadEvent $event
-     * @return void
-     */
-    public function onPreFileDownload(PreFileDownloadEvent $event): void
-    {
-        $context = $event->getContext();
-
-        // Don't do any rate limiting for non-moodle.org packages.
-        if (!($context instanceof CompleteMoodlePackage)) {
-            return;
-        }
-
-        // Do some very simple rate limiting. After every <n> files we download,
-        // wait for <s> seconds.
-        if (++$this->throttleUsage > (Platform::getEnv("COMPOSER_MOODLEORG_THROTTLE_COUNT") ?: 10)) {
-            sleep(Platform::getEnv("COMPOSER_MOODLEORG_THROTTLE_SLEEP") ?: 5);
-            $this->throttleUsage = 0;
-        }
-    }
-
-    /**
-     * After any file is downloaded, check and see if it's a Moodle package.
-     * If it is, then we can check the MD5 sum for the downloaded file.
+     * Verifies the md5 hash of a file downloaded from Moodle.org
      *
      * @param PostFileDownloadEvent $event
      * @return void
      */
-    public function onPostFileDownload(PostFileDownloadEvent $event): void
+    public function verifyDownloadedPackage(PostFileDownloadEvent $event): void
     {
         $context = $event->getContext();
 
@@ -121,6 +98,31 @@ class Plugin implements PluginInterface, EventSubscriberInterface
             throw new UnexpectedValueException(
                 "Checksum verification of the file failed (downloaded from {$context->getSourceUrl()})"
             );
+        }
+    }
+
+    /**
+     * Do some dirt cheap and simple rate limiting. After every <n> files we download, wait for <s> seconds
+     *
+     * @param PostFileDownloadEvent $event
+     * @return void
+     */
+    public function rateLimit(PostFileDownloadEvent $event): void
+    {
+        if (Platform::getEnv("COMPOSER_MOODLEORG_NO_THROTTLE")) {
+            return;
+        }
+
+        // Did we get this from moodle.org?
+        if (parse_url($event->getUrl(), PHP_URL_HOST) !== 'moodle.org') {
+            return;
+        }
+
+        if (++$this->throttleUsage >= (Platform::getEnv("COMPOSER_MOODLEORG_THROTTLE_COUNT") ?: 12)) {
+            $this->io->debug("$this->throttleUsage exceeded count, sleeping...");
+            sleep(Platform::getEnv("COMPOSER_MOODLEORG_THROTTLE_SLEEP") ?: 12);
+            $this->throttleUsage = 0;
+            $this->io->info("Rate limit exceeded, backing off...");
         }
     }
 }
