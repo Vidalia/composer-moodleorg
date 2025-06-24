@@ -16,6 +16,7 @@ use Composer\Pcre\Preg;
 use Composer\Repository\ArrayRepository;
 use Composer\Repository\RepositoryInterface;
 use Composer\Semver\Constraint\Constraint;
+use Composer\Util\HttpDownloader;
 use Composer\Util\Platform;
 use Composer\Util\Url;
 use ErrorException;
@@ -34,10 +35,10 @@ use Vidalia\Composer\MoodleOrg\Moodle\PlugListResponse;
  */
 class Repository extends ArrayRepository implements RepositoryInterface
 {
+
     private const API_URL = "https://download.moodle.org/api";
     private const API_VERSION = "1.3";
 
-    private IOInterface $io;
     private Cache $cache;
 
     /**
@@ -51,11 +52,9 @@ class Repository extends ArrayRepository implements RepositoryInterface
      * @param Config $config
      * @param IOInterface $io
      */
-    public function __construct(Config $config, IOInterface $io)
+    public function __construct(private readonly Config $config, private readonly IOInterface $io)
     {
         parent::__construct();
-
-        $this->io = $io;
 
         $this->cache = new Cache(
             $io,
@@ -120,26 +119,23 @@ class Repository extends ArrayRepository implements RepositoryInterface
         $cacheAge = $this->cache->getAge($cacheKey);
 
         if (false !== $cacheAge && $cacheAge < 600 && false !== ($cachedData = $this->cache->read($cacheKey))) {
-            return PlugListResponse::jsonDeserialize(json_decode($cachedData))->getPlugins();
+            return PlugListResponse::jsonDeserialize(json_decode($cachedData, true))->getPlugins();
         }
 
         $url = implode('/', [ self::API_URL, self::API_VERSION, 'pluglist.php' ]);
 
-        if (false === ($response = file_get_contents($url))) {
-            throw new LogicException("Failed to query $url");
-        }
-
-        $this->io->debug("HTTP GET $url");
+        $downloader = new HttpDownloader($this->io, $this->config);
+        $response = $downloader->get($url);
 
         if (!$this->cache->isReadOnly()) {
             try {
-                $this->cache->write($cacheKey, $response);
+                $this->cache->write($cacheKey, $response->getBody());
             } catch (ErrorException $e) {
                 $this->io->warning("Failed to cache $cacheKey: {$e->getMessage()}");
             }
         }
 
-        return PlugListResponse::jsonDeserialize(json_decode($response))->getPlugins();
+        return PlugListResponse::jsonDeserialize($response->decodeJson())->getPlugins();
     }
 
     /**

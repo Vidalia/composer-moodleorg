@@ -86,25 +86,25 @@ final class MoodlePlugin
     /**
      * Deserializes a JSON object into a plugin
      *
-     * @param object $source
+     * @param array $source
      * @return MoodlePlugin
      */
-    public static function jsonDeserialize(object $source): MoodlePlugin
+    public static function jsonDeserialize(array $source): MoodlePlugin
     {
         $plugin = new MoodlePlugin();
 
-        $plugin->id = intval($source->id);
-        $plugin->name = strval($source->name);
-        $plugin->component = strval($source->component);
-        $plugin->sourceUrl = strval($source->source);
-        $plugin->documentationUrl = strval($source->doc);
-        $plugin->bugsUrl = strval($source->bugs);
-        $plugin->discussionUrl = strval($source->discussion);
+        $plugin->id = intval($source['id']);
+        $plugin->name = strval($source['name']);
+        $plugin->component = strval($source['component']);
+        $plugin->sourceUrl = strval($source['source']);
+        $plugin->documentationUrl = strval($source['doc']);
+        $plugin->bugsUrl = strval($source['bugs']);
+        $plugin->discussionUrl = strval($source['discussion']);
         try {
-            $plugin->timeLastReleased = new DateTimeImmutable("@$source->timelastreleased", new DateTimeZone('UTC'));
+            $plugin->timeLastReleased = new DateTimeImmutable("@{$source['timelastreleased']}", new DateTimeZone('UTC'));
         } catch (Exception $e) {
             throw new LogicException(
-                "Couldn't convert plugin ->timecreated \"$source->timecreated\" to a DateTime",
+                "Couldn't convert plugin ->timecreated \"{$source['timecreated']}\" to a DateTime",
                 0,
                 $e
             );
@@ -112,7 +112,7 @@ final class MoodlePlugin
 
         $plugin->versions = array_map(
             MoodlePluginVersion::jsonDeserialize(...),
-            $source->versions
+            $source['versions']
         );
 
         return $plugin;

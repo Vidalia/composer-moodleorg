@@ -101,30 +101,30 @@ final class MoodlePluginVersion
     /**
      * Deserializes a JSON object
      *
-     * @param object $source
+     * @param array $source
      * @return MoodlePluginVersion
      */
-    public static function jsonDeserialize(object $source): MoodlePluginVersion
+    public static function jsonDeserialize(array $source): MoodlePluginVersion
     {
         $version = new MoodlePluginVersion();
 
-        $version->id = intval($source->id);
-        $version->version = intval($source->version);
-        $version->release = $source->release;
-        $version->maturity = MoodlePluginMaturity::jsonDeserialize($source->maturity ?? "200");
-        $version->downloadUrl = $source->downloadurl;
-        $version->downloadMd5 = $source->downloadmd5;
-        $version->vcsSystem = $source->vcssystem;
-        $version->vcsSystemOther = $source->vcssystemother;
-        $version->vcsRepositoryUrl = $source->vcsrepositoryurl;
-        $version->vcsTag = $source->vcstag;
-        $version->vcsBranch = $source->vcsbranch;
+        $version->id = intval($source['id']);
+        $version->version = intval($source['version']);
+        $version->release = $source['release'];
+        $version->maturity = MoodlePluginMaturity::jsonDeserialize($source['maturity'] ?? "200");
+        $version->downloadUrl = $source['downloadurl'];
+        $version->downloadMd5 = $source['downloadmd5'];
+        $version->vcsSystem = $source['vcssystem'];
+        $version->vcsSystemOther = $source['vcssystemother'];
+        $version->vcsRepositoryUrl = $source['vcsrepositoryurl'];
+        $version->vcsTag = $source['vcstag'];
+        $version->vcsBranch = $source['vcsbranch'];
 
         try {
-            $version->timeCreated = new DateTimeImmutable("@$source->timecreated", new DateTimeZone('UTC'));
+            $version->timeCreated = new DateTimeImmutable("@{$source['timecreated']}", new DateTimeZone('UTC'));
         } catch (Exception $e) {
             throw new LogicException(
-                "Couldn't convert plugin ->timecreated \"$source->timecreated\" to a DateTime",
+                "Couldn't convert plugin ->timecreated \"{$source['timecreated']}\" to a DateTime",
                 0,
                 $e
             );

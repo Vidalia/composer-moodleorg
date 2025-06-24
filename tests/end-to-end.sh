@@ -17,7 +17,7 @@ composer config allow-plugins.composer/installers true || exit 1
 composer require vidalia/composer-moodleorg || exit 1
 
 # Can we search for things?
-if $(composer search format_cards | grep moodledotorg/format_cards -q);
+if $(composer -vvvv search format_cards | grep moodledotorg/format_cards -q);
 then
   echo "Found moodledotorg/format_cards in search results"
 else
@@ -26,7 +26,7 @@ else
 fi
 
 # Test basic plugin installation
-composer require moodledotorg/format_cards || exit 1
+composer -vvvv require moodledotorg/format_cards || exit 1
 if [ -d course/format/cards ];
 then
   echo "Expected path course/format/cards exists"
@@ -36,7 +36,7 @@ else
 fi
 
 # Test uninstallation
-composer remove moodledotorg/format_cards || exit 1
+composer -vvvv remove moodledotorg/format_cards || exit 1
 if [ -d course/format/cards ];
 then
   echo "Expected path course/format/cards still exists"
@@ -46,7 +46,7 @@ else
 fi
 
 # Try a different plugin type
-composer require moodledotorg/mod_zoom || exit 1
+composer -vvvv require moodledotorg/mod_zoom || exit 1
 if [ -d mod/zoom ];
 then
   echo "Expected path mod/zoom exists"
@@ -56,8 +56,8 @@ else
 fi
 
 # How about a constraint?
-composer require moodledotorg/format_cards:2024.5.21 || exit 1
-composer remove moodledotorg/format_cards || exit 1
+composer -vvvv require moodledotorg/format_cards:2024.5.21 || exit 1
+composer -vvvv remove moodledotorg/format_cards || exit 1
 
 # Configuring the namespace
-COMPOSER_MOODLEORG_NAMESPACE=customnamespace composer require --no-cache customnamespace/format_cards || exit 1
+COMPOSER_MOODLEORG_NAMESPACE=customnamespace composer -vvvv require --no-cache customnamespace/format_cards || exit 1

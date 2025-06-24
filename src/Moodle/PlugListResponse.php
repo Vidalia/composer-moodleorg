@@ -31,15 +31,15 @@ final class PlugListResponse
         return $this->plugins;
     }
 
-    public static function jsonDeserialize(object $source): PlugListResponse
+    public static function jsonDeserialize(array $source): PlugListResponse
     {
         $response = new PlugListResponse();
 
         try {
-            $response->timestamp = new DateTimeImmutable("@$source->timestamp", new DateTimeZone('UTC'));
+            $response->timestamp = new DateTimeImmutable("@{$source['timestamp']}", new DateTimeZone('UTC'));
         } catch (Exception $e) {
             throw new LogicException(
-                "Couldn't convert plugin ->timecreated \"$source->timecreated\" to a DateTime",
+                "Couldn't convert plugin ->timecreated \"{$source['timecreated']}\" to a DateTime",
                 0,
                 $e
             );
@@ -47,7 +47,7 @@ final class PlugListResponse
 
         $response->plugins = array_map(
             MoodlePlugin::jsonDeserialize(...),
-            $source->plugins
+            $source['plugins']
         );
 
         return $response;
